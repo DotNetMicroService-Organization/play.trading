@@ -2,6 +2,7 @@ using System.Reflection;
 using GreenPipes;
 using MassTransit;
 using Microsoft.AspNetCore.SignalR;
+using Play.Common.Configuration;
 using Play.Common.HealthChecks;
 using Play.Common.Identity;
 using Play.Common.MassTransit;
@@ -19,6 +20,8 @@ using Play.Trading.Services.StateMachines;
 const string AllowedOriginSetting = "AllowedOrigin";
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.ConfigureAzureKeyVault();
 
 builder.Services.AddMongo()
                 .AddMongoRepository<CatalogItem>("catalogitems")
