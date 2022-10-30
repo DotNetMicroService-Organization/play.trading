@@ -36,7 +36,7 @@ kubectl create secret generic identity-secrets --from-literal=cosmosdb-connectio
 
 ## Create the k8s pod
 ```powershell
-kubectl apply -f kubernetes\identity.yaml -n $namespace
+kubectl apply -f kubernetes\trading.yaml -n $namespace
 ```
 
 ## Create the pod managed identity
