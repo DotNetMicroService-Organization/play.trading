@@ -13,17 +13,26 @@ public class PurchaseController : ControllerBase
 {
     private readonly IPublishEndpoint publishEndpoint;
     private readonly IRequestClient<GetPurchaseState> purchaseClient;
+    private readonly ILogger<PurchaseController> logger;
 
-    public PurchaseController(IPublishEndpoint publishEndpoint, IRequestClient<GetPurchaseState> purchaseClient)
+    public PurchaseController(IPublishEndpoint publishEndpoint, IRequestClient<GetPurchaseState> purchaseClient, ILogger<PurchaseController> logger)
     {
         this.publishEndpoint = publishEndpoint;
         this.purchaseClient = purchaseClient;
+        this.logger = logger;
     }
 
     [HttpPost]
     public async Task<IActionResult> PostAsync(SubmitPurchaseDto purchase)
     {
         var userId = User.FindFirstValue("sub");
+
+        logger.LogInformation(
+            "Received purchase request of {Quantity} of item {ItemId} from user {UserId} with CorrelationId {CorrelationId}",
+            purchase.Quantity,
+            purchase.ItemId,
+            userId,
+            purchase.IdempotencyId);
 
         var message = new PurchaseRequested(
             Guid.Parse(userId),
