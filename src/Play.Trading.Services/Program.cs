@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.SignalR;
 using Play.Common.Configuration;
 using Play.Common.HealthChecks;
 using Play.Common.Identity;
+using Play.Common.Logging;
 using Play.Common.MassTransit;
 using Play.Common.MongoDB;
 using Play.Common.Settings;
@@ -46,11 +47,7 @@ builder.Services.AddSingleton<IUserIdProvider, UserIdProvider>()
 builder.Services.AddHealthChecks()
                 .AddMongoDb();
 
-builder.Services.AddLogging(loggingBuilder =>
-{
-    var seqSettings = builder.Configuration.GetSection(nameof(SeqSettings)).Get<SeqSettings>();
-    loggingBuilder.AddSeq(serverUrl: seqSettings.ServerUrl);
-});
+builder.Services.AddSeqLogging(builder.Configuration);
 
 var app = builder.Build();
 
