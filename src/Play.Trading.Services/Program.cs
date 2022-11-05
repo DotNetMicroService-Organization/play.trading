@@ -2,6 +2,8 @@ using System.Reflection;
 using System.Text.Json.Serialization;
 using MassTransit;
 using Microsoft.AspNetCore.SignalR;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Play.Common.Configuration;
 using Play.Common.HealthChecks;
 using Play.Common.Identity;
@@ -48,6 +50,20 @@ builder.Services.AddHealthChecks()
                 .AddMongoDb();
 
 builder.Services.AddSeqLogging(builder.Configuration);
+
+builder.Services.AddOpenTelemetryTracing(openBuilder =>
+{
+    var serviceSettings = builder.Configuration.GetSection(nameof(ServiceSettings)).Get<ServiceSettings>();
+    openBuilder.AddSource(serviceSettings.ServiceName)
+                .AddSource("MassTransit")
+                .SetResourceBuilder(
+                    ResourceBuilder.CreateDefault()
+                            .AddService(serviceName: serviceSettings.ServiceName))
+                .AddHttpClientInstrumentation()
+                .AddAspNetCoreInstrumentation()
+                .AddConsoleExporter();
+
+});
 
 var app = builder.Build();
 
