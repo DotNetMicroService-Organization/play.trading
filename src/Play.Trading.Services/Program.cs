@@ -1,5 +1,5 @@
 using System.Reflection;
-using GreenPipes;
+using System.Text.Json.Serialization;
 using MassTransit;
 using Microsoft.AspNetCore.SignalR;
 using Play.Common.Configuration;
@@ -35,7 +35,7 @@ builder.Services.AddControllers(options =>
 {
     options.SuppressAsyncSuffixInActionNames = false;
 })
-.AddJsonOptions(options => options.JsonSerializerOptions.IgnoreNullValues = true);
+.AddJsonOptions(options => options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -111,7 +111,4 @@ void AddMassTransit(IServiceCollection services)
     EndpointConvention.Map<GrantItems>(new Uri(queueSettings.GrantItemsQueueAddress));
     EndpointConvention.Map<DebitGil>(new Uri(queueSettings.DebitGilQueueAddress));
     EndpointConvention.Map<SubtractItems>(new Uri(queueSettings.SubtractItemsQueueAddress));
-
-    services.AddMassTransitHostedService();
-    services.AddGenericRequestClient();
 }

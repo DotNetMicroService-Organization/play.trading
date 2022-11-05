@@ -1,5 +1,4 @@
-using Automatonymous;
-using MassTransit.Saga;
+using MassTransit;
 
 namespace Play.Trading.Services.StateMachines
 {
