@@ -46,6 +46,12 @@ builder.Services.AddSingleton<IUserIdProvider, UserIdProvider>()
 builder.Services.AddHealthChecks()
                 .AddMongoDb();
 
+builder.Services.AddLogging(loggingBuilder =>
+{
+    var seqSettings = builder.Configuration.GetSection(nameof(SeqSettings)).Get<SeqSettings>();
+    loggingBuilder.AddSeq(serverUrl: seqSettings.ServerUrl);
+});
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
