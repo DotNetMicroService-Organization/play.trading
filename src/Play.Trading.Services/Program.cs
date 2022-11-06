@@ -10,6 +10,7 @@ using Play.Common.Identity;
 using Play.Common.Logging;
 using Play.Common.MassTransit;
 using Play.Common.MongoDB;
+using Play.Common.OpenTelemetry;
 using Play.Common.Settings;
 using Play.Identity.Contracts;
 using Play.Inventory.Contracts;
@@ -49,27 +50,8 @@ builder.Services.AddSingleton<IUserIdProvider, UserIdProvider>()
 builder.Services.AddHealthChecks()
                 .AddMongoDb();
 
-builder.Services.AddSeqLogging(builder.Configuration);
-
-builder.Services.AddOpenTelemetryTracing(openBuilder =>
-{
-    var serviceSettings = builder.Configuration.GetSection(nameof(ServiceSettings)).Get<ServiceSettings>();
-    openBuilder.AddSource(serviceSettings.ServiceName)
-                .AddSource("MassTransit")
-                .SetResourceBuilder(
-                    ResourceBuilder.CreateDefault()
-                            .AddService(serviceName: serviceSettings.ServiceName))
-                .AddHttpClientInstrumentation()
-                .AddAspNetCoreInstrumentation()
-                .AddJaegerExporter(options =>
-                {
-                    var jaegerSettings = builder.Configuration.GetSection(nameof(JaegerSettings)).Get<JaegerSettings>();
-
-                    options.AgentHost = jaegerSettings.Host;
-                    options.AgentPort = jaegerSettings.Port;
-                });
-
-});
+builder.Services.AddSeqLogging(builder.Configuration)
+                .AddTracing(builder.Configuration);
 
 var app = builder.Build();
 
