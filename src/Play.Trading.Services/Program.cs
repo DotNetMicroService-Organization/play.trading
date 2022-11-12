@@ -51,16 +51,8 @@ builder.Services.AddHealthChecks()
                 .AddMongoDb();
 
 builder.Services.AddSeqLogging(builder.Configuration)
-                .AddTracing(builder.Configuration);
-
-builder.Services.AddOpenTelemetryMetrics(metricsBuilder =>
-{
-    var settings = builder.Configuration.GetSection(nameof(ServiceSettings)).Get<ServiceSettings>();
-    metricsBuilder.AddMeter(settings.ServiceName)
-                    .AddHttpClientInstrumentation()
-                    .AddAspNetCoreInstrumentation()
-                    .AddPrometheusExporter();
-});
+                .AddTracing(builder.Configuration)
+                .AddMetrics(builder.Configuration);
 
 var app = builder.Build();
 
