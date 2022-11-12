@@ -1,4 +1,6 @@
+using System.Diagnostics.Metrics;
 using MassTransit;
+using Play.Common.Settings;
 using Play.Identity.Contracts;
 using Play.Inventory.Contracts;
 using Play.Trading.Services.Activities;
@@ -8,22 +10,26 @@ namespace Play.Trading.Services.StateMachines
 {
     public class PurchaseStateMachine : MassTransitStateMachine<PurchaseState>
     {
+        private const int delta = 1;
         private readonly MessageHub hub;
         private readonly ILogger<PurchaseStateMachine> logger;
+        private readonly Counter<int> purchaseStartedCounter;
+        private readonly Counter<int> purchaseSuccessCounter;
+        private readonly Counter<int> purchaseFailedCounter;
 
-        public State? Accepted { get; }
-        public State? ItemsGranted { get; }
-        public State? Completed { get; }
-        public State? Faulted { get; }
+        public State Accepted { get; }
+        public State ItemsGranted { get; }
+        public State Completed { get; }
+        public State Faulted { get; }
 
-        public Event<PurchaseRequested>? PurchaseRequested { get; }
-        public Event<GetPurchaseState>? GetPurchaseState { get; }
+        public Event<PurchaseRequested> PurchaseRequested { get; }
+        public Event<GetPurchaseState> GetPurchaseState { get; }
         public Event<InventoryItemsGranted> InventoryItemsGranted { get; }
         public Event<GilDebited> GilDebited { get; }
         public Event<Fault<GrantItems>> GrantItemsFaulted { get; }
         public Event<Fault<DebitGil>> DebitGilFaulted { get; }
 
-        public PurchaseStateMachine(MessageHub hub, ILogger<PurchaseStateMachine> logger)
+        public PurchaseStateMachine(MessageHub hub, ILogger<PurchaseStateMachine> logger, IConfiguration configuration)
         {
             InstanceState(state => state.CurrentState);
             ConfigureEvents();
@@ -35,6 +41,12 @@ namespace Play.Trading.Services.StateMachines
             ConfigureCompleted();
             this.hub = hub;
             this.logger = logger;
+
+            var settings = configuration.GetSection(nameof(ServiceSettings)).Get<ServiceSettings>();
+            Meter meter = new(settings.ServiceName);
+            purchaseStartedCounter = meter.CreateCounter<int>("PurchaseStarted");
+            purchaseSuccessCounter = meter.CreateCounter<int>("PurchaseSuccess");
+            purchaseFailedCounter = meter.CreateCounter<int>("PurchaseFailed");
         }
 
         private void ConfigureEvents()
@@ -63,6 +75,9 @@ namespace Play.Trading.Services.StateMachines
                         logger.LogInformation(
                             "Calculating total price for purchase with CorrelationId {CorrelationId}...",
                             context.Saga.CorrelationId);
+                        purchaseStartedCounter.Add(delta, new KeyValuePair<string, object>(
+                            nameof(context.Saga.ItemId),
+                            context.Saga.ItemId));
                     })
                     .Activity(x => x.OfType<CalculatePurchaseTotalActivity>())
                     .Send(context => new GrantItems(
@@ -81,6 +96,8 @@ namespace Play.Trading.Services.StateMachines
                                 "Could not calculate the total price of purchase with CorrelationId {CorrelationId}. Error: {ErrorMessage}",
                                 context.Saga.CorrelationId,
                                 context.Saga.ErrorMessage);
+                            purchaseFailedCounter.Add(delta, new KeyValuePair<string, object>(
+                            nameof(context.Saga.ItemId), context.Saga.ItemId));
                         })
                         .TransitionTo(Faulted)
                         .ThenAsync(async context => await hub.SendStatusAsync(context.Saga)))
@@ -115,6 +132,8 @@ namespace Play.Trading.Services.StateMachines
                             "Could not grant items for purchase with CorrelationId {CorrelationId}. Error: {ErrorMessage}",
                             context.Saga.CorrelationId,
                             context.Saga.ErrorMessage);
+                        purchaseFailedCounter.Add(delta, new KeyValuePair<string, object>(
+                            nameof(context.Saga.ItemId), context.Saga.ItemId));
                     })
                     .TransitionTo(Faulted)
                     .ThenAsync(async context => await hub.SendStatusAsync(context.Saga))
@@ -134,6 +153,8 @@ namespace Play.Trading.Services.StateMachines
                             "The total price of purchase with CorrelationId {CorrelationId} has been debited from user {UserId}. Purchase complete.",
                             context.Saga.CorrelationId,
                             context.Saga.UserId);
+                        purchaseSuccessCounter.Add(delta, new KeyValuePair<string, object>(
+                            nameof(context.Saga.ItemId), context.Saga.ItemId));
                     })
                     .TransitionTo(Completed)
                     .ThenAsync(async context => await hub.SendStatusAsync(context.Saga)),
@@ -153,6 +174,8 @@ namespace Play.Trading.Services.StateMachines
                             context.Saga.CorrelationId,
                             context.Saga.UserId,
                             context.Saga.ErrorMessage);
+                        purchaseFailedCounter.Add(delta, new KeyValuePair<string, object>(
+                            nameof(context.Saga.ItemId), context.Saga.ItemId));
                     })
                     .TransitionTo(Faulted)
                     .ThenAsync(async context => await hub.SendStatusAsync(context.Saga))

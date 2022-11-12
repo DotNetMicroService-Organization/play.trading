@@ -2,7 +2,7 @@ using System.Reflection;
 using System.Text.Json.Serialization;
 using MassTransit;
 using Microsoft.AspNetCore.SignalR;
-using OpenTelemetry.Resources;
+using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 using Play.Common.Configuration;
 using Play.Common.HealthChecks;
@@ -53,6 +53,15 @@ builder.Services.AddHealthChecks()
 builder.Services.AddSeqLogging(builder.Configuration)
                 .AddTracing(builder.Configuration);
 
+builder.Services.AddOpenTelemetryMetrics(metricsBuilder =>
+{
+    var settings = builder.Configuration.GetSection(nameof(ServiceSettings)).Get<ServiceSettings>();
+    metricsBuilder.AddMeter(settings.ServiceName)
+                    .AddHttpClientInstrumentation()
+                    .AddAspNetCoreInstrumentation()
+                    .AddPrometheusExporter();
+});
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -68,6 +77,8 @@ if (app.Environment.IsDevelopment())
             .AllowCredentials();
     });
 }
+
+app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
 app.UseHttpsRedirection();
 

@@ -12,14 +12,14 @@ namespace Play.Trading.Services.Controllers;
 [Authorize]
 public class StoreController : ControllerBase
 {
-    private readonly IRepository<CatalogItem>? catalogRepository;
-    private readonly IRepository<ApplicationUser>? usersRepository;
-    private readonly IRepository<InventoryItem>? inventoryRepository;
+    private readonly IRepository<CatalogItem> catalogRepository;
+    private readonly IRepository<ApplicationUser> usersRepository;
+    private readonly IRepository<InventoryItem> inventoryRepository;
 
     public StoreController(
-        IRepository<CatalogItem>? catalogRepository,
-        IRepository<ApplicationUser>? usersRepository,
-        IRepository<InventoryItem>? inventoryRepository)
+        IRepository<CatalogItem> catalogRepository,
+        IRepository<ApplicationUser> usersRepository,
+        IRepository<InventoryItem> inventoryRepository)
     {
         this.catalogRepository = catalogRepository;
         this.usersRepository = usersRepository;
