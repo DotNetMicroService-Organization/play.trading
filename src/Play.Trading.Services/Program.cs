@@ -2,8 +2,6 @@ using System.Reflection;
 using System.Text.Json.Serialization;
 using MassTransit;
 using Microsoft.AspNetCore.SignalR;
-using OpenTelemetry.Metrics;
-using OpenTelemetry.Trace;
 using Play.Common.Configuration;
 using Play.Common.HealthChecks;
 using Play.Common.Identity;

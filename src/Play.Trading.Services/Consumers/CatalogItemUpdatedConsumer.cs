@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using MassTransit;
 using Play.Catalog.Contracts;
 using Play.Common;
